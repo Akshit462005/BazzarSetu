@@ -1,0 +1,190 @@
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// Centralized database connection
+const pool = require('../utils/database');
+
+// Login page
+router.get('/login', (req, res) => {
+    res.render('auth/login');
+});
+
+// Register page
+router.get('/register', (req, res) => {
+    res.render('auth/register');
+});
+
+// Register handler
+router.post('/register', async (req, res) => {
+    try {
+        const { username, email, password, role } = req.body;
+        
+        // Validate input
+        if (!username || !email || !password || !role) {
+            return res.render('auth/register', { 
+                error: 'All fields are required',
+                values: { username, email, role }
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await pool.query(
+            'SELECT * FROM users WHERE email = $1 OR username = $2',
+            [email, username]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.render('auth/register', {
+                error: 'User with this email or username already exists',
+                values: { username, email, role }
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await pool.query(
+            'INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4)',
+            [username, email, hashedPassword, role]
+        );
+
+        res.redirect('/auth/login');
+    } catch (err) {
+        console.error('Registration error:', err);
+        res.render('auth/register', { 
+            error: 'Registration failed. Please try again.',
+            values: { 
+                username: req.body.username || '', 
+                email: req.body.email || '', 
+                role: req.body.role || 'user' 
+            }
+        });
+    }
+});
+
+// Login handler
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        
+        if (result.rows.length === 0) {
+            return res.render('auth/login', { error: 'User not found' });
+        }
+
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(password, user.password);
+
+        if (!validPassword) {
+            return res.render('auth/login', { error: 'Invalid password' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET || 'fallback-jwt-secret-change-in-production',
+            { expiresIn: '24h' }
+        );
+
+        req.session.token = token;
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            loginTime: new Date().toISOString()
+        };
+        
+        // Also set a backup cookie for Vercel compatibility
+        res.cookie('auth_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 60 * 24, // 24 hours
+            sameSite: 'lax'
+        });
+        
+        console.log('Login successful - Token set in session and cookie');
+        
+        // Save session before redirect to ensure it persists
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.render('auth/login', { error: 'Login failed - session error' });
+            }
+
+            // API response for cache integration
+            if (req.headers['content-type']?.includes('application/json') || req.query.format === 'json') {
+                return res.json({
+                    success: true,
+                    message: 'Login successful',
+                    user: req.session.user,
+                    redirectUrl: user.role === 'shopkeeper' ? '/shopkeeper/dashboard' : '/user/dashboard'
+                });
+            }
+
+            if (user.role === 'shopkeeper') {
+                res.redirect('/shopkeeper/dashboard');
+            } else {
+                res.redirect('/user/dashboard');
+            }
+        });
+    } catch (err) {
+        res.render('error', { message: 'Login failed' });
+    }
+});
+
+// Session status endpoint for debugging
+router.get('/status', (req, res) => {
+    res.json({
+        sessionID: req.sessionID,
+        hasSession: !!req.session,
+        hasToken: !!req.session?.token,
+        hasUser: !!req.session?.user,
+        user: req.session?.user || null,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Redis debug endpoint
+router.get('/redis-debug', async (req, res) => {
+    try {
+        const redisCache = require('../utils/redis');
+        const debugInfo = await redisCache.getDebugInfo();
+        
+        res.json({
+            redis: debugInfo,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.json({
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Logout with cache cleanup
+router.get('/logout', (req, res) => {
+    // Clear both session and cookie
+    res.clearCookie('auth_token');
+    
+    // API response for cache integration
+    if (req.headers.accept?.includes('application/json') || req.query.format === 'json') {
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Logout failed' });
+            }
+            res.json({
+                success: true,
+                message: 'Logout successful',
+                redirectUrl: '/'
+            });
+        });
+    } else {
+        req.session.destroy();
+        res.redirect('/');
+    }
+});
+
+module.exports = router;
