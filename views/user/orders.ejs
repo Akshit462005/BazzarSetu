@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Orders - BazaarSetu</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                BazaarSetu
+            </div>
+            <div class="nav-links">
+                <a href="/user/dashboard" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/user/cart" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Cart</span>
+                </a>
+                <a href="/auth/logout" class="nav-link logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="enhanced-orders-container">
+        <div class="orders-header">
+            <h1><i class="fas fa-box"></i> Your Orders</h1>
+            <div class="orders-actions">
+                <div class="search-filter">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="orderSearch" placeholder="Search orders...">
+                    </div>
+                    <select id="orderFilter" class="filter-select">
+                        <option value="all">All Orders</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <a href="/user/dashboard" class="btn outline">
+                    <i class="fas fa-arrow-left"></i> Back to Shopping
+                </a>
+            </div>
+        </div>
+
+        <% if (orders.length === 0) { %>
+            <div class="empty-orders">
+                <div class="empty-orders-icon">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <h2>No orders found</h2>
+                <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                <a href="/user/dashboard" class="btn primary large">
+                    <i class="fas fa-store"></i> Start Shopping
+                </a>
+            </div>
+        <% } else { %>
+            <div class="orders-stats">
+                <div class="stat-item">
+                    <i class="fas fa-shopping-bag"></i>
+                    <div class="stat-content">
+                        <span class="stat-number"><%= orders.length %></span>
+                        <span class="stat-label">Total Orders</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <div class="stat-content">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-truck"></i>
+                    <div class="stat-content">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">In Transit</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="stat-content">
+                        <span class="stat-number">0</span>
+                        <span class="stat-label">Delivered</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="orders-list">
+                <% orders.forEach((order, index) => { %>
+                    <div class="enhanced-order-card" data-order-id="<%= order.id %>">
+                        <div class="order-header">
+                            <div class="order-info">
+                                <h3>
+                                    <i class="fas fa-receipt"></i>
+                                    Order #<%= order.id %>
+                                </h3>
+                                <div class="order-meta">
+                                    <span class="order-date">
+                                        <i class="fas fa-calendar"></i>
+                                        <%= new Date(order.created_at).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        }) %>
+                                    </span>
+                                    <span class="order-time">
+                                        <i class="fas fa-clock"></i>
+                                        <%= new Date(order.created_at).toLocaleTimeString('en-US', { 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }) %>
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="order-status-section">
+                                <div class="status-badge status-<%= (order.status || 'pending').toLowerCase() %>">
+                                    <% 
+                                        const status = (order.status || 'pending').toLowerCase();
+                                        const statusIcons = {
+                                            'pending': 'fas fa-clock',
+                                            'processing': 'fas fa-cog fa-spin',
+                                            'shipped': 'fas fa-truck',
+                                            'delivered': 'fas fa-check-circle',
+                                            'cancelled': 'fas fa-times-circle'
+                                        };
+                                    %>
+                                    <i class="<%= statusIcons[status] || 'fas fa-clock' %>"></i>
+                                    <%= (order.status || 'Pending').toUpperCase() %>
+                                </div>
+                                
+                                <div class="order-total">
+                                    <span class="total-label">Total Amount</span>
+                                    <span class="total-amount">₹<%= order.total_amount %></span>
+                                </div>
+                            </div>
+                            
+                            <div class="order-actions">
+                                <button class="action-btn view" onclick="toggleOrderDetails('<%= order.id %>')" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn track" onclick="trackOrder('<%= order.id %>')" title="Track Order">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                                <button class="action-btn reorder" onclick="reorder('<%= order.id %>')" title="Reorder">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <% if ((order.status || 'pending').toLowerCase() === 'pending') { %>
+                                    <button class="action-btn cancel" onclick="cancelOrder('<%= order.id %>')" title="Cancel Order">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                <% } %>
+                            </div>
+                        </div>
+                        
+                        <div class="order-progress">
+                            <div class="progress-bar">
+                                <% 
+                                    const progressSteps = ['pending', 'processing', 'shipped', 'delivered'];
+                                    const currentStatus = (order.status || 'pending').toLowerCase();
+                                    const currentStep = progressSteps.indexOf(currentStatus);
+                                %>
+                                <% progressSteps.forEach((step, stepIndex) => { %>
+                                    <div class="progress-step <%= stepIndex <= currentStep ? 'active' : '' %> <%= stepIndex === currentStep ? 'current' : '' %>">
+                                        <div class="step-icon">
+                                            <% 
+                                                const stepIcons = {
+                                                    'pending': 'fas fa-shopping-cart',
+                                                    'processing': 'fas fa-cog',
+                                                    'shipped': 'fas fa-truck',
+                                                    'delivered': 'fas fa-home'
+                                                };
+                                            %>
+                                            <i class="<%= stepIcons[step] %>"></i>
+                                        </div>
+                                        <span class="step-label"><%= step.charAt(0).toUpperCase() + step.slice(1) %></span>
+                                    </div>
+                                    <% if (stepIndex < progressSteps.length - 1) { %>
+                                        <div class="progress-line <%= stepIndex < currentStep ? 'completed' : '' %>"></div>
+                                    <% } %>
+                                <% }) %>
+                            </div>
+                        </div>
+                        
+                        <div class="order-details" id="details-<%= order.id %>" style="display: none;">
+                            <div class="details-header">
+                                <h4><i class="fas fa-list"></i> Order Items</h4>
+                                <span class="items-count"><%= order.items ? order.items.length : 0 %> item(s)</span>
+                            </div>
+                            
+                            <div class="order-items">
+                                <% if (order.items && order.items.length > 0) { %>
+                                    <% order.items.forEach(item => { %>
+                                        <div class="order-item">
+                                            <div class="item-image">
+                                                <% if (item.image_url) { %>
+                                                    <img src="<%= item.image_url %>" alt="<%= item.name %>">
+                                                <% } else { %>
+                                                    <div class="no-image">
+                                                        <i class="fas fa-image"></i>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                            
+                                            <div class="item-details">
+                                                <h5><%= item.name %></h5>
+                                                <p class="item-description"><%= item.description || 'No description available' %></p>
+                                                <div class="item-meta">
+                                                    <span class="quantity">
+                                                        <i class="fas fa-times"></i>
+                                                        Qty: <%= item.quantity %>
+                                                    </span>
+                                                    <span class="unit-price">
+                                                        <i class="fas fa-tag"></i>
+                                                        ₹<%= item.price %> each
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="item-total">
+                                                <span class="total-price">₹<%= (item.price * item.quantity).toFixed(2) %></span>
+                                                <div class="item-actions">
+                                                    <button class="btn small secondary" onclick="buyAgain('<%= item.id %>')">
+                                                        <i class="fas fa-shopping-cart"></i> Buy Again
+                                                    </button>
+                                                    <button class="btn small outline" onclick="writeReview('<%= item.id %>')">
+                                                        <i class="fas fa-star"></i> Review
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                <% } else { %>
+                                    <div class="no-items">
+                                        <p>No items found for this order.</p>
+                                    </div>
+                                <% } %>
+                            </div>
+                            
+                            <div class="order-summary">
+                                <div class="summary-row">
+                                    <span>Subtotal:</span>
+                                    <span>₹<%= (order.total_amount / 1.18).toFixed(2) %></span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tax (GST 18%):</span>
+                                    <span>₹<%= (order.total_amount - (order.total_amount / 1.18)).toFixed(2) %></span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Shipping:</span>
+                                    <span>FREE</span>
+                                </div>
+                                <div class="summary-total">
+                                    <span>Total:</span>
+                                    <span>₹<%= order.total_amount %></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+            
+            <div id="noOrdersFound" class="no-results" style="display: none;">
+                <i class="fas fa-search"></i>
+                <h3>No orders found</h3>
+                <p>No orders match your current filters</p>
+            </div>
+        <% } %>
+    </main>
+
+    <!-- Order Tracking Modal -->
+    <div id="trackingModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTrackingModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="trackingContent">
+                <!-- Dynamic tracking content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>BazaarSetu</h4>
+                <p>Your trusted local marketplace</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="/user/dashboard">Dashboard</a>
+                <a href="/user/cart">Cart</a>
+                <a href="/user/orders">Orders</a>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <a href="#">Help Center</a>
+                <a href="#">Contact Us</a>
+                <a href="#">Return Policy</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 BazaarSetu. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        let allOrders = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeOrders();
+            setupEventListeners();
+        });
+
+        function initializeOrders() {
+            const orderCards = document.querySelectorAll('.enhanced-order-card');
+            allOrders = Array.from(orderCards).map(card => ({
+                id: card.getAttribute('data-order-id'),
+                element: card
+            }));
+        }
+
+        function setupEventListeners() {
+            document.getElementById('orderSearch').addEventListener('input', debounce(filterOrders, 300));
+            document.getElementById('orderFilter').addEventListener('change', filterOrders);
+        }
+
+        function filterOrders() {
+            const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
+            const filterValue = document.getElementById('orderFilter').value;
+            
+            let visibleCount = 0;
+            
+            allOrders.forEach(order => {
+                const orderCard = order.element;
+                const orderText = orderCard.textContent.toLowerCase();
+                const orderStatus = orderCard.querySelector('.status-badge').textContent.toLowerCase();
+                
+                const matchesSearch = searchTerm === '' || orderText.includes(searchTerm);
+                const matchesFilter = filterValue === 'all' || orderStatus.includes(filterValue);
+                
+                if (matchesSearch && matchesFilter) {
+                    orderCard.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    orderCard.style.display = 'none';
+                }
+            });
+            
+            const noResults = document.getElementById('noOrdersFound');
+            const ordersList = document.querySelector('.orders-list');
+            
+            if (visibleCount === 0 && allOrders.length > 0) {
+                noResults.style.display = 'block';
+                ordersList.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                ordersList.style.display = 'block';
+            }
+        }
+
+        function toggleOrderDetails(orderId) {
+            const details = document.getElementById(`details-${orderId}`);
+            const isVisible = details.style.display !== 'none';
+            
+            // Close all other details first
+            document.querySelectorAll('.order-details').forEach(detail => {
+                detail.style.display = 'none';
+            });
+            
+            if (!isVisible) {
+                details.style.display = 'block';
+                details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function trackOrder(orderId) {
+            const modal = document.getElementById('trackingModal');
+            const content = document.getElementById('trackingContent');
+            
+            // Show loading state
+            content.innerHTML = `
+                <div class="tracking-info">
+                    <h2><i class="fas fa-map-marker-alt"></i> Track Order #${orderId}</h2>
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading tracking information...</p>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Fetch real tracking data
+            fetch(`/user/orders/${orderId}/track`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const trackingData = data.tracking || [];
+                    const historyData = data.history || [];
+                    
+                    content.innerHTML = `
+                        <div class="tracking-info">
+                            <h2><i class="fas fa-map-marker-alt"></i> Track Order #${orderId}</h2>
+                            <div class="tracking-timeline">
+                                ${historyData.length > 0 ? 
+                                    historyData.map((item, index) => `
+                                        <div class="timeline-item ${index === historyData.length - 1 ? 'current' : 'completed'}">
+                                            <div class="timeline-icon">
+                                                <i class="${getStatusIcon(item.new_status)}"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <h4>${item.new_status.charAt(0).toUpperCase() + item.new_status.slice(1)}</h4>
+                                                <p>${item.reason || `Order status changed to ${item.new_status}`}</p>
+                                                <span class="timeline-date">${new Date(item.created_at).toLocaleDateString('en-US', { 
+                                                    year: 'numeric', 
+                                                    month: 'long', 
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}</span>
+                                            </div>
+                                        </div>
+                                    `).join('') :
+                                    `<div class="timeline-item current">
+                                        <div class="timeline-icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <h4>Order Placed</h4>
+                                            <p>Your order has been placed successfully</p>
+                                            <span class="timeline-date">Tracking information will be updated soon</span>
+                                        </div>
+                                    </div>`
+                                }
+                                ${trackingData.length > 0 ? `
+                                    <div class="tracking-updates">
+                                        <h3>Tracking Updates</h3>
+                                        ${trackingData.map(update => `
+                                            <div class="tracking-update">
+                                                <div class="update-status">${update.status}</div>
+                                                <div class="update-location">${update.location || 'Processing Center'}</div>
+                                                <div class="update-description">${update.description}</div>
+                                                <div class="update-time">${new Date(update.timestamp).toLocaleString()}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="tracking-info">
+                            <h2><i class="fas fa-map-marker-alt"></i> Track Order #${orderId}</h2>
+                            <div class="error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <p>Unable to load tracking information</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching tracking data:', error);
+                content.innerHTML = `
+                    <div class="tracking-info">
+                        <h2><i class="fas fa-map-marker-alt"></i> Track Order #${orderId}</h2>
+                        <div class="error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Error loading tracking information</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        function getStatusIcon(status) {
+            const icons = {
+                'pending': 'fas fa-clock',
+                'processing': 'fas fa-cog',
+                'shipped': 'fas fa-truck',
+                'delivered': 'fas fa-check-circle',
+                'cancelled': 'fas fa-times-circle'
+            };
+            return icons[status] || 'fas fa-info-circle';
+        }
+
+        function closeTrackingModal() {
+            document.getElementById('trackingModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function reorder(orderId) {
+            showToast('Adding items to cart...', 'info');
+            
+            // Get all items from the order
+            const orderItems = [];
+            <% orders.forEach(order => { %>
+                <% if (order.items && order.items.length > 0) { %>
+                    if (orderId === '<%= order.id %>') {
+                        <% order.items.forEach(item => { %>
+                            orderItems.push({
+                                id: '<%= item.id %>',
+                                name: '<%= item.name %>',
+                                price: '<%= item.price %>',
+                                quantity: <%= item.quantity %>,
+                                image_url: '<%= item.image_url || "" %>',
+                                description: '<%= item.description || "" %>'
+                            });
+                        <% }) %>
+                    }
+                <% } %>
+            <% }) %>
+            
+            if (orderItems.length === 0) {
+                showToast('No items found in this order', 'error');
+                return;
+            }
+            
+            console.log('🔄 Reordering items:', orderItems);
+            
+            // Add items sequentially to avoid overwhelming the server
+            let currentItemIndex = 0;
+            let totalRequests = 0;
+            let successfulRequests = 0;
+            let failedRequests = 0;
+            
+            // Calculate total requests needed
+            orderItems.forEach(item => {
+                totalRequests += item.quantity;
+            });
+            
+            function addNextItem() {
+                if (currentItemIndex >= orderItems.length) {
+                    // All items processed
+                    if (failedRequests === 0) {
+                        showToast(`Successfully added all ${orderItems.length} product(s) to cart!`, 'success');
+                    } else if (successfulRequests > 0) {
+                        showToast(`Added ${successfulRequests} item(s), ${failedRequests} failed`, 'warning');
+                    } else {
+                        showToast('Failed to add items to cart', 'error');
+                    }
+                    return;
+                }
+                
+                const item = orderItems[currentItemIndex];
+                let quantityAdded = 0;
+                
+                function addSingleQuantity() {
+                    if (quantityAdded >= item.quantity) {
+                        currentItemIndex++;
+                        addNextItem();
+                        return;
+                    }
+                    
+                    fetch('/user/add-to-cart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `productId=${item.id}`
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            successfulRequests++;
+                            console.log(`✅ Added ${item.name} (${quantityAdded + 1}/${item.quantity})`);
+                        } else {
+                            failedRequests++;
+                            console.error(`❌ Failed to add ${item.name}:`, response.status);
+                        }
+                        quantityAdded++;
+                        
+                        // Add next quantity of same item with small delay
+                        setTimeout(addSingleQuantity, 100);
+                    })
+                    .catch(error => {
+                        console.error('Error adding item to cart:', error);
+                        failedRequests++;
+                        quantityAdded++;
+                        setTimeout(addSingleQuantity, 100);
+                    });
+                }
+                
+                addSingleQuantity();
+            }
+            
+            addNextItem();
+        }
+
+        function cancelOrder(orderId) {
+            const reason = prompt('Please provide a reason for cancellation (optional):');
+            if (reason !== null) { // User didn't click cancel
+                if (confirm('Are you sure you want to cancel this order?')) {
+                    showToast('Cancelling order...', 'info');
+                    
+                    fetch(`/user/orders/${orderId}/cancel`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ reason: reason || 'Cancelled by customer' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Order cancelled successfully', 'success');
+                            
+                            // Update status badge
+                            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+                            const statusBadge = orderCard.querySelector('.status-badge');
+                            statusBadge.className = 'status-badge status-cancelled';
+                            statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> CANCELLED';
+                            
+                            // Hide cancel button
+                            const cancelBtn = orderCard.querySelector('.action-btn.cancel');
+                            if (cancelBtn) cancelBtn.style.display = 'none';
+                            
+                            // Update progress bar
+                            const progressSteps = orderCard.querySelectorAll('.progress-step');
+                            progressSteps.forEach(step => {
+                                step.classList.remove('active', 'current');
+                            });
+                            
+                        } else {
+                            showToast(data.error || 'Failed to cancel order', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cancelling order:', error);
+                        showToast('Error cancelling order', 'error');
+                    });
+                }
+            }
+        }
+
+        function buyAgain(itemId) {
+            showToast('Adding item to cart...', 'info');
+            
+            console.log('🛒 Adding individual item to cart:', itemId);
+            
+            fetch('/user/add-to-cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `productId=${itemId}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    showToast('Item added to cart successfully!', 'success');
+                    console.log('✅ Individual item added to cart');
+                } else {
+                    throw new Error(`HTTP ${response.status}: Failed to add item`);
+                }
+            })
+            .catch(error => {
+                console.error('Error adding item to cart:', error);
+                showToast('Failed to add item to cart', 'error');
+            });
+        }
+
+        function writeReview(itemId) {
+            // Find the order ID for this item
+            let orderId = null;
+            <% orders.forEach(order => { %>
+                <% if (order.items && order.items.length > 0) { %>
+                    <% order.items.forEach(item => { %>
+                        if (itemId === '<%= item.id %>') {
+                            orderId = '<%= order.id %>';
+                        }
+                    <% }) %>
+                <% } %>
+            <% }) %>
+            
+            if (!orderId) {
+                showToast('Unable to determine order for this item', 'error');
+                return;
+            }
+            
+            const rating = prompt('Rate this product (1-5 stars):');
+            if (rating && rating >= 1 && rating <= 5) {
+                const comment = prompt('Write a review (optional):') || '';
+                
+                showToast('Submitting review...', 'info');
+                
+                fetch(`/user/orders/${orderId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        productId: itemId,
+                        rating: parseInt(rating),
+                        comment: comment
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Review submitted successfully!', 'success');
+                        // Optionally disable the review button for this item
+                        const reviewBtn = event.target.closest('.item-actions').querySelector('.btn.outline');
+                        if (reviewBtn) {
+                            reviewBtn.disabled = true;
+                            reviewBtn.innerHTML = '<i class="fas fa-check"></i> Reviewed';
+                        }
+                    } else {
+                        showToast(data.error || 'Failed to submit review', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error submitting review:', error);
+                    showToast('Error submitting review', 'error');
+                });
+            } else if (rating !== null) {
+                showToast('Please enter a rating between 1 and 5', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'info': 'fas fa-info-circle',
+                'warning': 'fas fa-exclamation-triangle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 4000);
+        }
+
+        // Utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+    <script src="/js/order-status-manager.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{
+  "name": "ecommerce-website",
+  "version": "1.0.0",
+  "description": "E-commerce website with shopkeeper and user dashboards",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "build": "echo 'No build step required'",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:browser": "node browser-test.js",
+    "test:browser:visible": "cross-env HEADLESS=false node browser-test.js",
+    "test:browser:slow": "cross-env HEADLESS=false SLOWMO=2000 node browser-test.js",
+    "test:browser:debug": "cross-env HEADLESS=false DEVTOOLS=true node browser-test.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "connect-redis": "^6.1.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7",
+    "node-forge": "^1.3.2",
+    "pg": "^8.11.3",
+    "redis": "^5.10.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "axios": "^1.12.2",
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.0.1",
+    "puppeteer": "^21.11.0",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/tests/**/*.spec.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/app.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "forceExit": true,
+    "detectOpenHandles": false
+  }
+}

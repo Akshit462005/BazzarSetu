@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopkeeper Dashboard - BazaarSetu</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <header>
+        <nav>
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                BazaarSetu
+                <span class="admin-badge">Admin</span>
+            </div>
+            <div class="nav-links">
+                <a href="/shopkeeper/add-product" class="nav-link primary-action">
+                    <i class="fas fa-plus"></i>
+                    <span>Add Product</span>
+                </a>
+                <div class="nav-dropdown">
+                    <button class="nav-link dropdown-toggle">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Account</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                       
+                        <div class="dropdown-divider"></div>
+                        <a href="/auth/logout" class="dropdown-item logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-dashboard">
+        <div class="dashboard-header">
+            <div class="welcome-section">
+                <h1><i class="fas fa-tachometer-alt"></i> Shopkeeper Dashboard</h1>
+                <p class="dashboard-subtitle">Manage your products and track your business performance</p>
+            </div>
+            
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="openAddProductModal()">
+                    <i class="fas fa-plus"></i>
+                    <span>Quick Add</span>
+                </button>
+                <button class="quick-action-btn" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    <span>Export</span>
+                </button>
+                <button class="quick-action-btn" onclick="showAnalytics()">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="analytics-overview">
+            <div class="stat-cards">
+                <div class="stat-card revenue">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalRevenue">₹<%= stats ? stats.totalRevenue.toLocaleString() : '0' %></h3>
+                        <p>Total Revenue</p>
+                        <span class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 
+                            <% if (stats && stats.revenueThisMonth > 0) { %>
+                                +<%= ((stats.revenueThisMonth / stats.totalRevenue) * 100).toFixed(1) %>%
+                            <% } else { %>0%<% } %>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="stat-card products">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalProducts"><%= stats ? stats.totalProducts : products.length %></h3>
+                        <p>Total Products</p>
+                        <span class="stat-change neutral">
+                            <i class="fas fa-box"></i> System-wide
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="stat-card orders">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalOrders"><%= stats ? stats.totalOrders : '0' %></h3>
+                        <p>Total Orders</p>
+                        <span class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 
+                            <%= stats ? stats.ordersThisMonth : '0' %> this month
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="stat-card customers">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalCustomers"><%= stats ? stats.totalUsers : '0' %></h3>
+                        <p>Total Users</p>
+                        <span class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 
+                            <%= stats ? stats.newUsersThisMonth : '0' %> new
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Status Stats -->
+            <div class="order-status-stats">
+                <h3><i class="fas fa-chart-bar"></i> Order Status Overview</h3>
+                <div class="status-cards">
+                    <div class="status-card pending">
+                        <div class="status-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="status-content">
+                            <h4 id="pendingOrders">0</h4>
+                            <p>Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card processing">
+                        <div class="status-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="status-content">
+                            <h4 id="processingOrders">0</h4>
+                            <p>Processing</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card shipped">
+                        <div class="status-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="status-content">
+                            <h4 id="shippedOrders">0</h4>
+                            <p>Shipped</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card delivered">
+                        <div class="status-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="status-content">
+                            <h4 id="deliveredOrders">0</h4>
+                            <p>Delivered</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card cancelled">
+                        <div class="status-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="status-content">
+                            <h4 id="cancelledOrders">0</h4>
+                            <p>Cancelled</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-area"></i> Sales Trend</h3>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-pie"></i> Product Categories</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="products-management">
+            <div class="section-header">
+                <h2><i class="fas fa-boxes"></i> Product Management</h2>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="productSearch" placeholder="Search products...">
+                    </div>
+                    <select id="productFilter" class="filter-select">
+                        <option value="all">All Products</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="low-stock">Low Stock</option>
+                    </select>
+                    <button class="btn primary" onclick="window.location.href='/shopkeeper/add-product'">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+            </div>
+            
+            <div class="products-table-container">
+                <table class="products-table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Stock</th>
+                            <th>Sales</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% products.forEach((product, index) => { %>
+                            <tr class="product-row" data-product-id="<%= product.id %>">
+                                <td>
+                                    <input type="checkbox" class="product-checkbox" value="<%= product.id %>">
+                                </td>
+                                <td class="product-cell">
+                                    <div class="product-info">
+                                        <div class="product-image">
+                                            <% if (product.image_url) { %>
+                                                <img src="<%= product.image_url %>" alt="<%= product.name %>">
+                                            <% } else { %>
+                                                <div class="no-image">
+                                                    <i class="fas fa-image"></i>
+                                                </div>
+                                            <% } %>
+                                        </div>
+                                        <div class="product-details">
+                                            <h4><%= product.name %></h4>
+                                            <p><%= product.description.substring(0, 50) %>...</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="price-cell">
+                                    <span class="price">₹<%= product.price %></span>
+                                </td>
+                                <td class="status-cell">
+                                    <span class="status-badge active">Active</span>
+                                </td>
+                                <td class="stock-cell">
+                                    <span class="stock-count <%= product.stock_quantity === 0 ? 'out-of-stock' : product.stock_quantity < 10 ? 'low-stock' : '' %>">
+                                        <%= product.stock_quantity || 0 %>
+                                    </span>
+                                </td>
+                                <td class="sales-cell">
+                                    <span class="sales-count"><%= product.total_sold || 0 %></span>
+                                </td>
+                                <td class="actions-cell">
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit" onclick="editProduct(<%= product.id %>)" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn view" onclick="viewProduct(<%= product.id %>)" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn duplicate" onclick="duplicateProduct(<%= product.id %>)" title="Duplicate">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button class="action-btn delete" onclick="deleteProduct(<%= product.id %>, '<%= product.name %>')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+                
+                <div id="noProductsFound" class="no-results" style="display: none;">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No products found</h3>
+                    <p>Try adjusting your search or add your first product</p>
+                    <button class="btn primary" onclick="window.location.href='/shopkeeper/add-product'">
+                        <i class="fas fa-plus"></i> Add Your First Product
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bulk-actions" id="bulkActions" style="display: none;">
+                <span class="selected-count">0 items selected</span>
+                <button class="btn secondary" onclick="bulkActivate()">Activate</button>
+                <button class="btn secondary" onclick="bulkDeactivate()">Deactivate</button>
+                <button class="btn danger" onclick="bulkDelete()">Delete</button>
+            </div>
+        </div>
+        
+        <!-- Admin Management Tabs -->
+        <div class="admin-tabs">
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="switchTab('products')">
+                    <i class="fas fa-boxes"></i> Products
+                </button>
+                <button class="tab-btn" onclick="switchTab('users')">
+                    <i class="fas fa-users"></i> Users
+                </button>
+                <button class="tab-btn" onclick="switchTab('orders')">
+                    <i class="fas fa-shopping-cart"></i> Orders
+                </button>
+                <button class="tab-btn" onclick="switchTab('reviews')">
+                    <i class="fas fa-star"></i> Reviews
+                </button>
+                <button class="tab-btn" onclick="switchTab('reports')">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </button>
+            </div>
+            
+            <!-- Users Management Tab -->
+            <div id="usersTab" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> User Management</h2>
+                    <div class="header-actions">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="userSearch" placeholder="Search users...">
+                        </div>
+                        <select id="userFilter" class="filter-select">
+                            <option value="all">All Users</option>
+                            <option value="active">Active</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                        <button class="btn secondary" onclick="exportUsers()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="management-content">
+                    <div class="data-table-container">
+                        <table class="data-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Orders</th>
+                                    <th>Total Spent</th>
+                                    <th>Joined</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="7" class="loading-cell">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="usersPagination"></div>
+                </div>
+            </div>
+            
+            <!-- Orders Management Tab -->
+            <div id="ordersTab" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-shopping-cart"></i> Order Management</h2>
+                    <div class="header-actions">
+                        <select id="orderStatusFilter" class="filter-select">
+                            <option value="all">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button class="btn secondary" onclick="exportOrders()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="management-content">
+                    <div class="data-table-container">
+                        <table class="data-table" id="ordersTable">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Items</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <tr><td colspan="7" class="loading-cell">Loading orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="ordersPagination"></div>
+                </div>
+            </div>
+            
+            <!-- Reviews Management Tab -->
+            <div id="reviewsTab" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-star"></i> Review Management</h2>
+                    <div class="header-actions">
+                        <select id="reviewRatingFilter" class="filter-select">
+                            <option value="all">All Ratings</option>
+                            <option value="5">5 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="2">2 Stars</option>
+                            <option value="1">1 Star</option>
+                        </select>
+                        <button class="btn secondary" onclick="exportReviews()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="management-content">
+                    <div class="data-table-container">
+                        <table class="data-table" id="reviewsTable">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>User</th>
+                                    <th>Rating</th>
+                                    <th>Comment</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewsTableBody">
+                                <tr><td colspan="6" class="loading-cell">Loading reviews...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="reviewsPagination"></div>
+                </div>
+            </div>
+            
+            <!-- Reports Tab -->
+            <div id="reportsTab" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Reports & Analytics</h2>
+                    <div class="header-actions">
+                        <select id="reportPeriod" class="filter-select">
+                            <option value="week">Last 7 Days</option>
+                            <option value="month" selected>Last 30 Days</option>
+                            <option value="year">Last Year</option>
+                        </select>
+                        <button class="btn secondary" onclick="refreshReports()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="reports-content">
+                    <div class="report-cards">
+                        <div class="report-card">
+                            <h3><i class="fas fa-chart-line"></i> Sales Report</h3>
+                            <canvas id="salesReportChart"></canvas>
+                        </div>
+                        <div class="report-card">
+                            <h3><i class="fas fa-trophy"></i> Top Products</h3>
+                            <div id="topProductsList" class="top-products-list">
+                                <div class="loading">Loading top products...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-cards">
+                        <div class="report-card">
+                            <h3><i class="fas fa-users"></i> User Analytics</h3>
+                            <canvas id="userGrowthChart"></canvas>
+                        </div>
+                        <div class="report-card">
+                            <h3><i class="fas fa-star"></i> Review Analytics</h3>
+                            <div id="reviewAnalytics" class="analytics-summary">
+                                <div class="loading">Loading review analytics...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Action Modals -->
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content large">
+            <button class="modal-close" onclick="closeUserModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="userModalContent">
+                <!-- Dynamic user content -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content large">
+            <button class="modal-close" onclick="closeOrderModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="orderModalContent">
+                <!-- Dynamic order content -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Update Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content small">
+            <button class="modal-close" onclick="closeStatusModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="statusModalContent">
+                <!-- Dynamic status update content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Product View Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content large">
+            <button class="modal-close" onclick="closeProductModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="productModalContent">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content small">
+            <div class="delete-confirmation">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Delete Product</h3>
+                <p>Are you sure you want to delete "<span id="deleteProductName"></span>"?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+                <div class="modal-actions">
+                    <button class="btn secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button class="btn danger" id="confirmDelete">Delete Product</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>BazaarSetu Admin</h4>
+                <p>Manage your business with ease</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="/shopkeeper/dashboard">Dashboard</a>
+                <a href="/shopkeeper/add-product">Add Product</a>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <a href="#">Help Center</a>
+                <a href="#">Contact Support</a>
+                <a href="#">Documentation</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 BazaarSetu. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let allProducts = [];
+        let selectedProducts = [];
+        let salesChart, categoryChart, userGrowthChart;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+                initializeDashboard();
+                setupEventListeners();
+                initializeCharts();
+                hideLoadingOverlay();
+                // fetch metrics initially and then poll every 10s for real-time updates
+                fetchMetrics();
+                setInterval(fetchMetrics, 10000);
+        });
+
+        // If redirected after delete, show success toast
+        (function showDeletedToastFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('deleted') === '1') {
+                showToast('Product deleted successfully', 'success');
+                // remove query param from URL without reload
+                params.delete('deleted');
+                const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+            }
+        })();
+
+            // UI: show cache info area
+            function showCacheInfoPanel(info) {
+                let panel = document.getElementById('cacheInfo');
+                if (!panel) {
+                    panel = document.createElement('div');
+                    panel.id = 'cacheInfo';
+                    panel.className = 'cache-info-card';
+                    panel.innerHTML = `<h4>Cache (Redis) Info</h4>
+                        <pre id="cacheContent">Loading...</pre>
+                        <button class="btn" id="refreshCacheBtn">Refresh Cache Info</button>`;
+                    document.querySelector('.analytics-overview').insertBefore(panel, document.querySelector('.charts-container'));
+                    document.getElementById('refreshCacheBtn').addEventListener('click', fetchCacheInfo);
+                }
+
+                const content = document.getElementById('cacheContent');
+                content.textContent = JSON.stringify(info, null, 2);
+            }
+
+            async function fetchCacheInfo() {
+                try {
+                    const res = await fetch('/shopkeeper/dashboard/metrics/cache', { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error('Failed to fetch cache info');
+                    const data = await res.json();
+                    showCacheInfoPanel(data);
+                } catch (err) {
+                    console.error('Error fetching cache info:', err);
+                }
+            }
+
+        function initializeDashboard() {
+            // Extract product data from table
+            const productRows = document.querySelectorAll('.product-row');
+            allProducts = Array.from(productRows).map(row => {
+                return {
+                    id: row.getAttribute('data-product-id'),
+                    element: row
+                };
+            });
+            
+            // Calculate and update statistics (fallback) - live metrics will overwrite these
+            updateStatistics();
+            
+            // Setup dropdown functionality
+            setupDropdowns();
+        }
+
+        // Fetch real-time metrics from server
+        async function fetchMetrics() {
+            try {
+                const res = await fetch('/shopkeeper/dashboard/metrics', {
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error('Failed to fetch metrics');
+                const data = await res.json();
+
+                // Update DOM elements with live values
+                document.getElementById('totalProducts').textContent = data.totalProducts;
+                document.getElementById('totalOrders').textContent = data.totalOrders;
+                document.getElementById('totalCustomers').textContent = data.totalCustomers;
+                const formattedRevenue = Number(data.totalRevenue).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+                document.getElementById('totalRevenue').textContent = `₹${formattedRevenue}`;
+
+                // Update order status counts
+                if (data.orderStatus) {
+                    document.getElementById('pendingOrders').textContent = data.orderStatus.pending || 0;
+                    document.getElementById('processingOrders').textContent = data.orderStatus.processing || 0;
+                    document.getElementById('shippedOrders').textContent = data.orderStatus.shipped || 0;
+                    document.getElementById('deliveredOrders').textContent = data.orderStatus.delivered || 0;
+                    document.getElementById('cancelledOrders').textContent = data.orderStatus.cancelled || 0;
+                }
+
+            } catch (err) {
+                console.error('Error fetching dashboard metrics:', err);
+            }
+        }
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('productSearch').addEventListener('input', debounce(filterProducts, 300));
+            
+            // Filter functionality
+            document.getElementById('productFilter').addEventListener('change', filterProducts);
+            
+            // Order status filter
+            document.getElementById('orderStatusFilter').addEventListener('change', () => {
+                loadOrders(1); // Reset to page 1 when filter changes
+            });
+            
+            // Checkbox functionality
+            document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
+            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedProducts);
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
+
+        function setupDropdowns() {
+            const dropdownToggle = document.querySelector('.dropdown-toggle');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            dropdownToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('show');
+            });
+            
+            document.addEventListener('click', function() {
+                dropdownMenu.classList.remove('show');
+            });
+        }
+
+        async function initializeCharts() {
+            try {
+                // Fetch real chart data from the backend
+                const [salesData, categoryData] = await Promise.all([
+                    fetch('/shopkeeper/api/sales-chart-data').then(res => res.json()),
+                    fetch('/shopkeeper/api/category-chart-data').then(res => res.json())
+                ]);
+
+                // Sales trend chart with real data
+                const salesCtx = document.getElementById('salesChart').getContext('2d');
+                salesChart = new Chart(salesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: salesData.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Sales (₹)',
+                            data: salesData.data || [0, 0, 0, 0, 0, 0],
+                            borderColor: '#4a90e2',
+                            backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                
+                // Category chart with real data
+                const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+                categoryChart = new Chart(categoryCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: categoryData.labels || ['No Data'],
+                        datasets: [{
+                            data: categoryData.data || [1],
+                            backgroundColor: categoryData.backgroundColor || ['#cccccc']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                // Update statistics with real data
+                await updateDashboardStats();
+
+            } catch (error) {
+                console.error('Error loading charts:', error);
+                // Fallback to basic charts if API fails
+                initializeFallbackCharts();
+            }
+        }
+
+        function initializeFallbackCharts() {
+            // Fallback charts with minimal data
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        label: 'Sales (₹)',
+                        data: [0],
+                        borderColor: '#4a90e2',
+                        backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        data: [1],
+                        backgroundColor: ['#cccccc']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        async function updateDashboardStats() {
+            try {
+                const statsResponse = await fetch('/shopkeeper/api/dashboard-stats');
+                const stats = await statsResponse.json();
+                
+                // Update the stat cards with real data
+                if (stats.success) {
+                    const data = stats.data;
+                    
+                    // Update revenue
+                    document.getElementById('totalRevenue').textContent = `₹${data.totalRevenue.toLocaleString()}`;
+                    
+                    // Update products count
+                    document.getElementById('totalProducts').textContent = data.totalProducts;
+                    
+                    // Update orders count
+                    document.getElementById('totalOrders').textContent = data.totalOrders;
+                    
+                    // Update customers count
+                    document.getElementById('totalCustomers').textContent = data.totalUsers;
+                }
+            } catch (error) {
+                console.error('Error updating dashboard stats:', error);
+            }
+        }
+
+        function filterProducts() {
+            const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+            const filterValue = document.getElementById('productFilter').value;
+            
+            let visibleCount = 0;
+            
+            allProducts.forEach(product => {
+                const row = product.element;
+                const productName = row.querySelector('.product-details h4').textContent.toLowerCase();
+                const productDesc = row.querySelector('.product-details p').textContent.toLowerCase();
+                
+                const matchesSearch = searchTerm === '' || 
+                                    productName.includes(searchTerm) || 
+                                    productDesc.includes(searchTerm);
+                
+                let matchesFilter = true;
+                if (filterValue === 'active') {
+                    matchesFilter = row.querySelector('.status-badge').classList.contains('active');
+                } else if (filterValue === 'inactive') {
+                    matchesFilter = !row.querySelector('.status-badge').classList.contains('active');
+                } else if (filterValue === 'low-stock') {
+                    const stock = parseInt(row.querySelector('.stock-count').textContent);
+                    matchesFilter = stock < 5;
+                }
+                
+                if (matchesSearch && matchesFilter) {
+                    row.style.display = 'table-row';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show/hide no results message
+            const noResults = document.getElementById('noProductsFound');
+            const table = document.getElementById('productsTable');
+            
+            if (visibleCount === 0) {
+                table.style.display = 'none';
+                noResults.style.display = 'block';
+            } else {
+                table.style.display = 'table';
+                noResults.style.display = 'none';
+            }
+        }
+
+        function updateStatistics() {
+            // Calculate total revenue (mock data)
+            const totalRevenue = allProducts.length * 1500; // Average revenue per product
+            document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toLocaleString()}`;
+            
+            // Update product count
+            document.getElementById('totalProducts').textContent = allProducts.length;
+            
+            // Mock data for orders and customers
+            document.getElementById('totalOrders').textContent = Math.floor(allProducts.length * 2.5);
+            document.getElementById('totalCustomers').textContent = Math.floor(allProducts.length * 1.8);
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                if (checkbox.closest('.product-row').style.display !== 'none') {
+                    checkbox.checked = selectAll.checked;
+                }
+            });
+            
+            updateSelectedProducts();
+        }
+
+        function updateSelectedProducts() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            selectedProducts = Array.from(checkboxes)
+                .filter(cb => cb.closest('.product-row').style.display !== 'none')
+                .map(cb => cb.value);
+            
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = bulkActions.querySelector('.selected-count');
+            
+            if (selectedProducts.length > 0) {
+                bulkActions.style.display = 'flex';
+                selectedCount.textContent = `${selectedProducts.length} items selected`;
+            } else {
+                bulkActions.style.display = 'none';
+            }
+        }
+
+        function editProduct(productId) {
+            window.location.href = `/shopkeeper/edit-product/${productId}`;
+        }
+
+        function viewProduct(productId) {
+            // Mock product data - in real app, fetch from server
+            const productRow = document.querySelector(`[data-product-id="${productId}"]`);
+            const productName = productRow.querySelector('.product-details h4').textContent;
+            const productDesc = productRow.querySelector('.product-details p').textContent;
+            const productPrice = productRow.querySelector('.price').textContent;
+            const productImage = productRow.querySelector('.product-image img');
+            
+            const modal = document.getElementById('productModal');
+            const content = document.getElementById('productModalContent');
+            
+            content.innerHTML = `
+                <div class="product-view">
+                    <div class="product-view-header">
+                        <h2>${productName}</h2>
+                        <div class="product-badges">
+                            <span class="badge success">Active</span>
+                            <span class="badge info">In Stock</span>
+                        </div>
+                    </div>
+                    
+                    <div class="product-view-content">
+                        <div class="product-view-image">
+                            ${productImage ? 
+                                `<img src="${productImage.src}" alt="${productName}">` : 
+                                `<div class="no-image-large"><i class="fas fa-image"></i><span>No Image</span></div>`
+                            }
+                        </div>
+                        
+                        <div class="product-view-details">
+                            <div class="detail-group">
+                                <label>Description:</label>
+                                <p>${productDesc}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <label>Price:</label>
+                                <p class="price-large">${productPrice}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <label>Stock:</label>
+                                <p>15 units available</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <label>Sales:</label>
+                                <p>0 units sold</p>
+                            </div>
+                            
+                            <div class="product-actions">
+                                <button class="btn primary" onclick="editProduct(${productId})">
+                                    <i class="fas fa-edit"></i> Edit Product
+                                </button>
+                                <button class="btn secondary" onclick="duplicateProduct(${productId})">
+                                    <i class="fas fa-copy"></i> Duplicate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function duplicateProduct(productId) {
+            showToast('Product duplication feature coming soon!', 'info');
+        }
+
+        function deleteProduct(productId, productName) {
+            const modal = document.getElementById('deleteModal');
+            const productNameSpan = document.getElementById('deleteProductName');
+            const confirmBtn = document.getElementById('confirmDelete');
+            
+            productNameSpan.textContent = productName;
+            
+            confirmBtn.onclick = function() {
+                // Create form and submit
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/shopkeeper/delete-product/${productId}`;
+                document.body.appendChild(form);
+                form.submit();
+            };
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function bulkActivate() {
+            showToast(`Activated ${selectedProducts.length} products`, 'success');
+            selectedProducts.forEach(id => {
+                const row = document.querySelector(`[data-product-id="${id}"]`);
+                const badge = row.querySelector('.status-badge');
+                badge.textContent = 'Active';
+                badge.className = 'status-badge active';
+            });
+            clearSelection();
+        }
+
+        function bulkDeactivate() {
+            showToast(`Deactivated ${selectedProducts.length} products`, 'info');
+            selectedProducts.forEach(id => {
+                const row = document.querySelector(`[data-product-id="${id}"]`);
+                const badge = row.querySelector('.status-badge');
+                badge.textContent = 'Inactive';
+                badge.className = 'status-badge inactive';
+            });
+            clearSelection();
+        }
+
+        function bulkDelete() {
+            if (confirm(`Are you sure you want to delete ${selectedProducts.length} products? This cannot be undone.`)) {
+                showToast(`Deleted ${selectedProducts.length} products`, 'success');
+                selectedProducts.forEach(id => {
+                    const row = document.querySelector(`[data-product-id="${id}"]`);
+                    row.remove();
+                });
+                clearSelection();
+                updateStatistics();
+            }
+        }
+
+        function clearSelection() {
+            document.getElementById('selectAll').checked = false;
+            document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedProducts();
+        }
+
+        // === ADMIN TAB MANAGEMENT ===
+        let currentTab = 'products';
+        let currentUsersPage = 1;
+        let currentOrdersPage = 1;
+        let currentReviewsPage = 1;
+        
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+            } else {
+                // Show products management for default case
+                document.querySelector('.products-management').style.display = 'block';
+            }
+            
+            // Add active class to the correct button
+            const tabButton = document.querySelector(`[onclick*="switchTab('${tabName}')"]`);
+            if (tabButton) {
+                tabButton.classList.add('active');
+            }
+            
+            currentTab = tabName;
+            
+            // Load data for the tab
+            loadTabData(tabName);
+        }
+        
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    break;
+                case 'reviews':
+                    loadReviews();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+                default:
+                    // Products are already loaded
+                    break;
+            }
+        }
+        
+        // === USER MANAGEMENT ===
+        async function loadUsers(page = 1) {
+            try {
+                const search = document.getElementById('userSearch')?.value || '';
+                const status = document.getElementById('userFilter')?.value || 'all';
+                
+                const response = await fetch(`/shopkeeper/admin/users?page=${page}&search=${search}&status=${status}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayUsers(data.users);
+                    updateUsersPagination(data.pagination);
+                } else {
+                    showToast('Failed to load users', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('Error loading users', 'error');
+            }
+        }
+        
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">No users found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-details">
+                                <span class="user-name">${user.name}</span>
+                                <span class="user-id">ID: ${user.id}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${user.order_count || 0}</td>
+                    <td>₹${parseFloat(user.total_spent || 0).toLocaleString()}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <span class="status-badge ${user.is_banned ? 'banned' : 'active'}">
+                            ${user.is_banned ? 'Banned' : 'Active'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewUserDetails(${user.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn ${user.is_banned ? 'unban' : 'ban'}" 
+                                    onclick="${user.is_banned ? 'unbanUser' : 'banUser'}(${user.id})" 
+                                    title="${user.is_banned ? 'Unban' : 'Ban'} User">
+                                <i class="fas fa-${user.is_banned ? 'check' : 'ban'}"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteUser(${user.id})" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function viewUserDetails(userId) {
+            try {
+                const response = await fetch(`/shopkeeper/admin/users/${userId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const user = data.user;
+                    const orders = data.recentOrders;
+                    
+                    document.getElementById('userModalContent').innerHTML = `
+                        <div class="user-details-modal">
+                            <h2><i class="fas fa-user"></i> ${user.name}</h2>
+                            <div class="user-info-grid">
+                                <div class="info-item">
+                                    <label>Email:</label>
+                                    <span>${user.email}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Member Since:</label>
+                                    <span>${new Date(user.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Total Orders:</label>
+                                    <span>${user.order_count}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Total Spent:</label>
+                                    <span>₹${parseFloat(user.total_spent).toLocaleString()}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Reviews Written:</label>
+                                    <span>${user.review_count}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Status:</label>
+                                    <span class="status-badge ${user.is_banned ? 'banned' : 'active'}">
+                                        ${user.is_banned ? 'Banned' : 'Active'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            ${user.is_banned ? `
+                                <div class="ban-info">
+                                    <h3>Ban Details</h3>
+                                    <p><strong>Banned On:</strong> ${new Date(user.banned_at).toLocaleString()}</p>
+                                    <p><strong>Reason:</strong> ${user.ban_reason || 'No reason provided'}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="recent-orders">
+                                <h3>Recent Orders</h3>
+                                ${orders.length > 0 ? `
+                                    <div class="orders-list">
+                                        ${orders.map(order => `
+                                            <div class="order-item">
+                                                <span>Order #${order.id}</span>
+                                                <span>₹${order.total_amount}</span>
+                                                <span class="status-badge status-${order.status}">${order.status}</span>
+                                                <span>${new Date(order.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : '<p>No orders found</p>'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('userModal').style.display = 'flex';
+                } else {
+                    showToast('Failed to load user details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading user details:', error);
+                showToast('Error loading user details', 'error');
+            }
+        }
+        
+        async function banUser(userId) {
+            const reason = prompt('Please provide a reason for banning this user:');
+            if (reason !== null) {
+                try {
+                    const response = await fetch(`/shopkeeper/admin/users/${userId}/ban`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ban: true, reason: reason })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('User banned successfully', 'success');
+                        loadUsers(currentUsersPage);
+                    } else {
+                        showToast(data.error || 'Failed to ban user', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error banning user:', error);
+                    showToast('Error banning user', 'error');
+                }
+            }
+        }
+        
+        async function unbanUser(userId) {
+            if (confirm('Are you sure you want to unban this user?')) {
+                try {
+                    const response = await fetch(`/shopkeeper/admin/users/${userId}/ban`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ban: false })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('User unbanned successfully', 'success');
+                        loadUsers(currentUsersPage);
+                    } else {
+                        showToast(data.error || 'Failed to unban user', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error unbanning user:', error);
+                    showToast('Error unbanning user', 'error');
+                }
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) {
+                try {
+                    const response = await fetch(`/shopkeeper/admin/users/${userId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('User deleted successfully', 'success');
+                        loadUsers(currentUsersPage);
+                    } else {
+                        showToast(data.error || 'Failed to delete user', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    showToast('Error deleting user', 'error');
+                }
+            }
+        }
+        
+        // === ORDER MANAGEMENT ===
+        async function loadOrders(page = 1) {
+            try {
+                const status = document.getElementById('orderStatusFilter')?.value || 'all';
+                
+                const response = await fetch(`/shopkeeper/admin/orders?page=${page}&status=${status}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayOrders(data.orders);
+                    updateOrdersPagination(data.pagination);
+                } else {
+                    showToast('Failed to load orders', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showToast('Error loading orders', 'error');
+            }
+        }
+        
+        function displayOrders(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">No orders found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td>#${order.id}</td>
+                    <td>
+                        <div class="customer-info">
+                            <span class="customer-name">${order.user_name}</span>
+                            <span class="customer-email">${order.user_email}</span>
+                        </div>
+                    </td>
+                    <td>₹${parseFloat(order.total_amount).toLocaleString()}</td>
+                    <td>${order.item_count} items</td>
+                    <td>
+                        <span class="status-badge status-${order.status}">
+                            ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewOrderDetails(${order.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="updateOrderStatus(${order.id})" title="Update Status">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function viewOrderDetails(orderId) {
+            try {
+                const response = await fetch(`/shopkeeper/admin/orders/${orderId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const order = data.order;
+                    
+                    document.getElementById('orderModalContent').innerHTML = `
+                        <div class="order-details-modal">
+                            <h2><i class="fas fa-shopping-cart"></i> Order #${order.id}</h2>
+                            <div class="order-info-grid">
+                                <div class="info-item">
+                                    <label>Customer:</label>
+                                    <span>${order.user_name}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Email:</label>
+                                    <span>${order.user_email}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Status:</label>
+                                    <span class="status-badge status-${order.status}">${order.status}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Order Date:</label>
+                                    <span>${new Date(order.created_at).toLocaleString()}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Total Amount:</label>
+                                    <span>₹${parseFloat(order.total_amount).toLocaleString()}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="order-items">
+                                <h3>Order Items</h3>
+                                <div class="items-list">
+                                    ${order.items.map(item => `
+                                        <div class="item-row">
+                                            <div class="item-image">
+                                                ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}">` : '<i class="fas fa-image"></i>'}
+                                            </div>
+                                            <div class="item-details">
+                                                <span class="item-name">${item.name}</span>
+                                                <span class="item-quantity">Qty: ${item.quantity}</span>
+                                                <span class="item-price">₹${item.price} each</span>
+                                            </div>
+                                            <div class="item-total">
+                                                ₹${(item.price * item.quantity).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="order-actions">
+                                <button class="btn primary" onclick="updateOrderStatus(${order.id})">
+                                    <i class="fas fa-edit"></i> Update Status
+                                </button>
+                                <button class="btn secondary" onclick="closeOrderModal()">
+                                    <i class="fas fa-times"></i> Close
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('orderModal').style.display = 'flex';
+                } else {
+                    showToast('Failed to load order details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading order details:', error);
+                showToast('Error loading order details', 'error');
+            }
+        }
+        
+        function updateOrderStatus(orderId) {
+            document.getElementById('statusModalContent').innerHTML = `
+                <div class="status-update-modal">
+                    <h3><i class="fas fa-edit"></i> Update Order Status</h3>
+                    <form onsubmit="submitStatusUpdate(event, ${orderId})">
+                        <div class="form-group">
+                            <label>New Status:</label>
+                            <select id="newStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location (optional):</label>
+                            <input type="text" id="statusLocation" placeholder="e.g., Processing Center">
+                        </div>
+                        <div class="form-group">
+                            <label>Description (optional):</label>
+                            <textarea id="statusDescription" placeholder="Additional details..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn secondary" onclick="closeStatusModal()">Cancel</button>
+                            <button type="submit" class="btn primary">Update Status</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+        
+        async function submitStatusUpdate(event, orderId) {
+            event.preventDefault();
+            
+            try {
+                const status = document.getElementById('newStatus').value;
+                const location = document.getElementById('statusLocation').value;
+                const description = document.getElementById('statusDescription').value;
+                
+                const response = await fetch(`/shopkeeper/admin/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, location, description })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Order status updated successfully', 'success');
+                    closeStatusModal();
+                    loadOrders(currentOrdersPage);
+                } else {
+                    showToast(data.error || 'Failed to update order status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                showToast('Error updating order status', 'error');
+            }
+        }
+        
+        // === REVIEWS MANAGEMENT ===
+        async function loadReviews(page = 1) {
+            try {
+                const response = await fetch(`/shopkeeper/admin/reviews?page=${page}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayReviews(data.reviews);
+                    updateReviewsPagination(data.pagination);
+                } else {
+                    showToast('Failed to load reviews', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                showToast('Error loading reviews', 'error');
+            }
+        }
+        
+        function displayReviews(reviews) {
+            const tbody = document.getElementById('reviewsTableBody');
+            if (reviews.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="no-data">No reviews found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = reviews.map(review => `
+                <tr>
+                    <td>
+                        <div class="product-info">
+                            <span class="product-name">${review.product_name}</span>
+                            <span class="product-id">ID: ${review.product_id}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="user-info">
+                            <span class="user-name">${review.user_name}</span>
+                            <span class="user-email">${review.user_email}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="rating-display">
+                            ${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}
+                            <span>(${review.rating}/5)</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="review-comment">
+                            ${review.comment ? review.comment.substring(0, 100) + (review.comment.length > 100 ? '...' : '') : 'No comment'}
+                        </div>
+                    </td>
+                    <td>${new Date(review.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn delete" onclick="deleteReview(${review.id})" title="Delete Review">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function deleteReview(reviewId) {
+            if (confirm('Are you sure you want to delete this review?')) {
+                try {
+                    const response = await fetch(`/shopkeeper/admin/reviews/${reviewId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('Review deleted successfully', 'success');
+                        loadReviews(currentReviewsPage);
+                    } else {
+                        showToast(data.error || 'Failed to delete review', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting review:', error);
+                    showToast('Error deleting review', 'error');
+                }
+            }
+        }
+        
+        // === REPORTS & ANALYTICS ===
+        async function loadReports() {
+            try {
+                const period = document.getElementById('reportPeriod')?.value || 'month';
+                
+                // Load sales report
+                const salesResponse = await fetch(`/shopkeeper/admin/reports/sales?period=${period}`);
+                const salesData = await salesResponse.json();
+                
+                if (salesData.success) {
+                    renderSalesChart(salesData.salesData);
+                    renderTopProducts(salesData.topProducts);
+                }
+                
+                // Load user analytics
+                const userResponse = await fetch(`/shopkeeper/admin/reports/users`);
+                const userData = await userResponse.json();
+                
+                if (userData.success) {
+                    renderUserGrowthChart(userData.userGrowth);
+                }
+                
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                showToast('Error loading reports', 'error');
+            }
+        }
+
+        function renderSalesChart(salesData) {
+            // Destroy existing chart if it exists
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            const ctx = document.getElementById('salesReportChart').getContext('2d');
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: salesData.map(item => new Date(item.date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: salesData.map(item => item.revenue),
+                        borderColor: '#4a90e2',
+                        backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderTopProducts(topProducts) {
+            const container = document.getElementById('topProductsList');
+            container.innerHTML = topProducts.map((product, index) => `
+                <div class="top-product-item">
+                    <span class="rank">#${index + 1}</span>
+                    <div class="product-details">
+                        <span class="product-name">${product.name}</span>
+                        <span class="product-stats">${product.total_sold} sold • ₹${parseFloat(product.revenue).toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderUserGrowthChart(userGrowth) {
+            // Destroy existing chart if it exists
+            if (userGrowthChart) {
+                userGrowthChart.destroy();
+            }
+            
+            const ctx = document.getElementById('userGrowthChart').getContext('2d');
+            userGrowthChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: userGrowth.map(item => new Date(item.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })),
+                    datasets: [{
+                        label: 'New Users',
+                        data: userGrowth.map(item => item.new_users),
+                        backgroundColor: '#00c853',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // === EXPORT FUNCTIONS ===
+        async function exportUsers() {
+            try {
+                const response = await fetch('/shopkeeper/admin/export/users?format=csv');
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'users_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Users exported successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting users:', error);
+                showToast('Error exporting users', 'error');
+            }
+        }
+        
+        async function exportOrders() {
+            try {
+                const response = await fetch('/shopkeeper/admin/export/orders?format=csv');
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'orders_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Orders exported successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting orders:', error);
+                showToast('Error exporting orders', 'error');
+            }
+        }
+        
+        async function exportReviews() {
+            try {
+                const response = await fetch('/shopkeeper/admin/export/reviews?format=csv');
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'reviews_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Reviews exported successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting reviews:', error);
+                showToast('Error exporting reviews', 'error');
+            }
+        }
+        
+        function exportData() {
+            // General export based on current tab
+            switch(currentTab) {
+                case 'users':
+                    exportUsers();
+                    break;
+                case 'orders':
+                    exportOrders();
+                    break;
+                case 'reviews':
+                    exportReviews();
+                    break;
+                default:
+                    showToast('Select a tab to export data', 'info');
+            }
+        }
+
+        function showAnalytics() {
+            switchTab('reports');
+        }
+        
+        function refreshReports() {
+            loadReports();
+            showToast('Reports refreshed', 'success');
+        }
+        
+        // === MODAL FUNCTIONS ===
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+        
+        function closeOrderModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+        
+        function closeStatusModal() {
+            document.getElementById('statusModal').style.display = 'none';
+        }
+        
+        // === PAGINATION FUNCTIONS ===
+        function updateUsersPagination(pagination) {
+            const container = document.getElementById('usersPagination');
+            if (pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" 
+                                onclick="loadUsers(${i})">${i}</button>`;
+            }
+            
+            container.innerHTML = html;
+            currentUsersPage = pagination.currentPage;
+        }
+        
+        function updateOrdersPagination(pagination) {
+            const container = document.getElementById('ordersPagination');
+            if (pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" 
+                                onclick="loadOrders(${i})">${i}</button>`;
+            }
+            
+            container.innerHTML = html;
+            currentOrdersPage = pagination.currentPage;
+        }
+        
+        function updateReviewsPagination(pagination) {
+            const container = document.getElementById('reviewsPagination');
+            if (pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" 
+                                onclick="loadReviews(${i})">${i}</button>`;
+            }
+            
+            container.innerHTML = html;
+            currentReviewsPage = pagination.currentPage;
+        }
+
+        function openAddProductModal() {
+            window.location.href = '/shopkeeper/add-product';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'info': 'fas fa-info-circle',
+                'warning': 'fas fa-exclamation-triangle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 4000);
+        }
+
+        function handleKeyboardShortcuts(e) {
+            // Ctrl/Cmd + N for new product
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                window.location.href = '/shopkeeper/add-product';
+            }
+            
+            // Ctrl/Cmd + F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('productSearch').focus();
+            }
+            
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                closeProductModal();
+                closeDeleteModal();
+            }
+        }
+
+        function hideLoadingOverlay() {
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 500);
+        }
+
+        // Utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>
