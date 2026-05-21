@@ -1,5 +1,5 @@
 /**
- * BazaarSetu Cache Inspector
+ * Bazzar Setu Cache Inspector
  * Run this in your browser console to inspect cache data
  */
 
@@ -16,7 +16,7 @@
         stats: 'color: #F44336; font-weight: bold;'
     };
     
-    console.log('%c🚀 BazaarSetu Cache Inspector', styles.header);
+    console.log('%c🚀 Bazzar Setu Cache Inspector', styles.header);
     console.log('%c================================', styles.header);
     
     if (!window.cache) {
@@ -100,7 +100,7 @@
     const sessionStorageData = {};
     for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
-        if (key.startsWith('bazaarsetu_')) {
+        if (key.startsWith('bazzar_setu_')) {
             try {
                 sessionStorageData[key] = JSON.parse(sessionStorage.getItem(key));
             } catch (e) {
@@ -110,9 +110,9 @@
     }
     
     if (Object.keys(sessionStorageData).length > 0) {
-        console.log('%cBazaarSetu Session Storage:', styles.key, sessionStorageData);
+        console.log('%cBazzar Setu Session Storage:', styles.key, sessionStorageData);
     } else {
-        console.log('%cNo BazaarSetu data in session storage', styles.empty);
+        console.log('%cNo Bazzar Setu data in session storage', styles.empty);
     }
     
     // Utility Functions

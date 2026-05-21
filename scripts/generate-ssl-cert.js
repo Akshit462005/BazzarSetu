@@ -27,7 +27,7 @@ cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
 const attrs = [
     { name: 'countryName', value: 'US' },
     { name: 'stateOrProvinceName', value: 'Development' },
-    { name: 'localityName', value: 'LocalBuy' },
+    { name: 'localityName', value: 'Bazzar Setu' },
     { name: 'organizationName', value: 'Development' },
     { name: 'commonName', value: 'localhost' }
 ];

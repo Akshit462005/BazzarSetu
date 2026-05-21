@@ -1,6 +1,6 @@
-# LocalBuy Cache System Setup
+# Bazzar Setu Cache System Setup
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "   LocalBuy Cache System Setup" -ForegroundColor Cyan
+Write-Host "   Bazzar Setu Cache System Setup" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 
 Write-Host ""

@@ -1,5 +1,5 @@
 /**
- * BazaarSetu Persistent Preferences Manager
+ * Bazzar Setu Persistent Preferences Manager
  * Uses Local Storage for user preferences that persist across browser sessions
  */
 

@@ -2,9 +2,16 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 
-// Centralized database connection
-const pool = require('../utils/database');
+const pool = new Pool({
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    host: process.env.POSTGRES_HOST,
+    port: parseInt(process.env.POSTGRES_PORT || 5432),
+    database: process.env.POSTGRES_DB,
+    ssl: { rejectUnauthorized: false } // Enable SSL for Aiven
+});
 
 // Login page
 router.get('/login', (req, res) => {
@@ -82,8 +89,8 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, role: user.role },
-            process.env.JWT_SECRET || 'fallback-jwt-secret-change-in-production',
-            { expiresIn: '24h' }
+            'your-jwt-secret',
+            { expiresIn: '1h' }
         );
 
         req.session.token = token;
@@ -94,81 +101,29 @@ router.post('/login', async (req, res) => {
             role: user.role,
             loginTime: new Date().toISOString()
         };
-        
-        // Also set a backup cookie for Vercel compatibility
-        res.cookie('auth_token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 1000 * 60 * 60 * 24, // 24 hours
-            sameSite: 'lax'
-        });
-        
-        console.log('Login successful - Token set in session and cookie');
-        
-        // Save session before redirect to ensure it persists
-        req.session.save((err) => {
-            if (err) {
-                console.error('Session save error:', err);
-                return res.render('auth/login', { error: 'Login failed - session error' });
-            }
 
-            // API response for cache integration
-            if (req.headers['content-type']?.includes('application/json') || req.query.format === 'json') {
-                return res.json({
-                    success: true,
-                    message: 'Login successful',
-                    user: req.session.user,
-                    redirectUrl: user.role === 'shopkeeper' ? '/shopkeeper/dashboard' : '/user/dashboard'
-                });
-            }
+        // API response for cache integration
+        if (req.headers['content-type']?.includes('application/json') || req.query.format === 'json') {
+            return res.json({
+                success: true,
+                message: 'Login successful',
+                user: req.session.user,
+                redirectUrl: user.role === 'shopkeeper' ? '/shopkeeper/dashboard' : '/user/dashboard'
+            });
+        }
 
-            if (user.role === 'shopkeeper') {
-                res.redirect('/shopkeeper/dashboard');
-            } else {
-                res.redirect('/user/dashboard');
-            }
-        });
+        if (user.role === 'shopkeeper') {
+            res.redirect('/shopkeeper/dashboard');
+        } else {
+            res.redirect('/user/dashboard');
+        }
     } catch (err) {
         res.render('error', { message: 'Login failed' });
     }
 });
 
-// Session status endpoint for debugging
-router.get('/status', (req, res) => {
-    res.json({
-        sessionID: req.sessionID,
-        hasSession: !!req.session,
-        hasToken: !!req.session?.token,
-        hasUser: !!req.session?.user,
-        user: req.session?.user || null,
-        environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString()
-    });
-});
-
-// Redis debug endpoint
-router.get('/redis-debug', async (req, res) => {
-    try {
-        const redisCache = require('../utils/redis');
-        const debugInfo = await redisCache.getDebugInfo();
-        
-        res.json({
-            redis: debugInfo,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.json({
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-
 // Logout with cache cleanup
 router.get('/logout', (req, res) => {
-    // Clear both session and cookie
-    res.clearCookie('auth_token');
-    
     // API response for cache integration
     if (req.headers.accept?.includes('application/json') || req.query.format === 'json') {
         req.session.destroy((err) => {

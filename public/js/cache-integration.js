@@ -1,10 +1,10 @@
 /**
- * BazaarSetu Browser Cache Integration
+ * Bazzar Setu Browser Cache Integration
  * Main integration script for all caching functionality
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 BazaarSetu Browser Cache System Initialized');
+    console.log('🚀 Bazzar Setu Browser Cache System Initialized');
 
     // Initialize both cache systems
     initializeCacheSystems();

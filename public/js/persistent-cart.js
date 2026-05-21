@@ -1,5 +1,5 @@
 /**
- * BazaarSetu Persistent Cart Manager
+ * Bazzar Setu Persistent Cart Manager
  * Uses Local Storage for persistent shopping cart across browser sessions
  */
 

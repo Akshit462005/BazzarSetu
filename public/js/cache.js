@@ -6,7 +6,7 @@
 class BrowserCache {
     constructor() {
         this.isSupported = this.checkSupport();
-        this.prefix = 'bazaarsetu_';
+        this.prefix = 'bazzar_setu_';
     }
 
     /**
@@ -98,7 +98,7 @@ class BrowserCache {
     }
 
     /**
-    * Clear all BazaarSetu cache items
+    * Clear all Bazzar Setu cache items
      */
     clear() {
         if (!this.isSupported) {

@@ -15,7 +15,7 @@ async function setupDatabase() {
     });
 
     try {
-        console.log('🔧 Setting up LocalBuy database...');
+        console.log('🔧 Setting up Bazzar Setu database...');
         
         // Read the schema file
         const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');

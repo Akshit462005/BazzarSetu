@@ -1,11 +1,11 @@
 /**
- * BazaarSetu Local Storage Cache Manager
+ * Bazzar Setu Local Storage Cache Manager
  * Persistent browser caching using Local Storage API
  * Data survives browser restarts and sessions
  */
 
 class LocalStorageCache {
-    constructor(prefix = 'bazaarsetu_local_') {
+    constructor(prefix = 'bazzar_setu_local_') {
         this.prefix = prefix;
         this.isSupported = this.checkSupport();
         this.stats = {
